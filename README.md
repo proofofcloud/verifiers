@@ -92,6 +92,32 @@ curl -X POST "http://localhost:3000/attestations/verify" \
 }
 ```
 
+Similarlry, for AMD SEV-SNP you can do:
+```bash
+curl -X POST "http://localhost:3000/attestations/verify" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "measurementHash": "7ed75de...",
+    "dockerComposeHash": "3ca4...",
+    "nilccVersion": "0.2.1",
+    "vcpus": 2
+  }'
+```
+
+**Response (Success):**
+```json
+{
+  "success": true,
+  "quote": {
+    "verified": true,
+    "header": {
+      "tee_type": "TEE_AMD_SEV_SNP"
+    }
+  },
+  "proof_of_cloud": true
+}
+```
+
 ### 2. Check Hardware ID
 
 **GET** `/hardware_id/:id`
