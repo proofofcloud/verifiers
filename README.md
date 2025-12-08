@@ -59,12 +59,13 @@ Verify a TEE attestation quote and check if it passes Proof-of-Cloud verificatio
 ```bash
 curl -X POST "http://localhost:3000/attestations/verify" \
   -H "Content-Type: application/json" \
-  -d '{"hex": "0x040002000..."}'
+  -d '{"type": "intel", "hex": "0x040002000..."}'
 ```
 
 **Request Body:**
 ```json
 {
+  "type": "intel",
   "hex": "0x040002000..."
 }
 ```
@@ -92,15 +93,13 @@ curl -X POST "http://localhost:3000/attestations/verify" \
 }
 ```
 
-Similarlry, for AMD SEV-SNP you can do:
+Similarly, for AMD SEV-SNP you can do:
 ```bash
 curl -X POST "http://localhost:3000/attestations/verify" \
   -H "Content-Type: application/json" \
   -d '{
-    "measurementHash": "7ed75de...",
-    "dockerComposeHash": "3ca4...",
-    "nilccVersion": "0.2.1",
-    "vcpus": 2
+    "type": "amd",
+    "hex": "0xdeadbeef..."
   }'
 ```
 
@@ -181,7 +180,7 @@ src/
 | Vendor | Status | Notes |
 |--------|--------|-------|
 | Intel TDX/SGX | ✅ Implemented | Via Phala Cloud API |
-| AMD SEV-SNP | 🚧 Stub | Contributors welcome |
+| AMD SEV-SNP | ✅ Implemented | Via Nillion verifier |
 | AWS Nitro | 🚧 Stub | Contributors welcome |
 
 ## Contributing

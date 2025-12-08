@@ -17,88 +17,25 @@ app.post("/attestations/verify", async (c) => {
   try {
     const body = await c.req.json();
 
-    // Branch: Intel DCAP when hex is provided
-    if (typeof body.hex === "string" && body.hex.length > 0) {
-      const result = await verifyIntelDcap(body.hex);
+    const type = body.type as string | undefined;
+    const hex = body.hex as string | undefined;
+
+    if (!type) {
+      return c.json({ success: false, error: "missing_type" }, 400);
+    }
+    if (typeof hex !== "string" || hex.length === 0) {
+      return c.json({ success: false, error: "missing_hex" }, 400);
+    }
+
+    if (type === "intel") {
+      const result = await verifyIntelDcap(hex);
+      return c.json(result);
+    } else if (type === "amd") {
+      const result = await verifyAmdSev(hex);
       return c.json(result);
     }
 
-    // Branch: AMD SEV when AMD keys are present
-    const hasAmdKeys =
-      "measurementHash" in body ||
-      "dockerComposeHash" in body ||
-      "nilccVersion" in body ||
-      "vcpus" in body;
-
-    if (hasAmdKeys) {
-      if (!body.measurementHash) {
-        return c.json({ success: false, error: "missing_measurementHash" }, 400);
-      }
-      if (!body.dockerComposeHash) {
-        return c.json({ success: false, error: "missing_dockerComposeHash" }, 400);
-      }
-      if (!body.nilccVersion) {
-        return c.json({ success: false, error: "missing_nilccVersion" }, 400);
-      }
-      if (body.vcpus === undefined) {
-        return c.json({ success: false, error: "missing_vcpus" }, 400);
-      }
-      if (typeof body.vcpus !== "number") {
-        return c.json({ success: false, error: "invalid_vcpus" }, 400);
-      }
-
-      const result = await verifyAmdSev({
-        measurementHash: body.measurementHash,
-        dockerComposeHash: body.dockerComposeHash,
-        nilccVersion: body.nilccVersion,
-        vcpus: body.vcpus,
-      });
-      return c.json(result);
-    }
-
-    return c.json({ success: false, error: "missing_parameters" }, 400);
-  } catch (error) {
-    return c.json({
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    }, 500);
-  }
-});
-
-// POST /attestations/verify/amd-sev
-app.post("/attestations/verify/amd-sev", async (c) => {
-  try {
-    const {
-      measurementHash,
-      dockerComposeHash,
-      nilccVersion,
-      vcpus,
-    } = await c.req.json();
-
-    if (!measurementHash) {
-      return c.json({ success: false, error: "missing_measurementHash" }, 400);
-    }
-    if (!dockerComposeHash) {
-      return c.json({ success: false, error: "missing_dockerComposeHash" }, 400);
-    }
-    if (!nilccVersion) {
-      return c.json({ success: false, error: "missing_nilccVersion" }, 400);
-    }
-    if (vcpus === undefined) {
-      return c.json({ success: false, error: "missing_vcpus" }, 400);
-    }
-    if (typeof vcpus !== "number") {
-      return c.json({ success: false, error: "invalid_vcpus" }, 400);
-    }
-
-    const result = await verifyAmdSev({
-      measurementHash,
-      dockerComposeHash,
-      nilccVersion,
-      vcpus,
-    });
-
-    return c.json(result);
+    return c.json({ success: false, error: "invalid_type" }, 400);
   } catch (error) {
     return c.json({
       success: false,
