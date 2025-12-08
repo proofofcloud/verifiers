@@ -20,29 +20,21 @@ export async function verifyIntelDcap(hex: string): Promise<AttestationResponse>
     throw new Error(`Phala API error: ${response.status} ${response.statusText}`);
   }
 
-  return await response.json();
+  return (await response.json()) as AttestationResponse;
 }
 
 /**
  * Verify AMD SEV-SNP attestation
- * TODO: Implement AMD SEV-SNP verification
- * See: https://www.amd.com/system/files/TechDocs/56860.pdf
+ * Proxies to Nillion Verifier API
  */
-export async function verifyAmdSev(params: {
-  measurementHash: string;
-  dockerComposeHash: string;
-  nilccVersion: string;
-  vcpus: number;
-}): Promise<AttestationResponse> {
-  const response = await fetch("https://nilcc.nillion.com/verify", {
+export async function verifyAmdSev(hex: string): Promise<AttestationResponse> {
+  // Nillion endpoint expects raw hex without 0x prefix
+  const reportHex = hex.startsWith("0x") ? hex.slice(2) : hex;
+
+  const response = await fetch("https://nilcc-verifier.nillion.network/v1/attestations/verify-amd", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      measurementHash: params.measurementHash,
-      dockerComposeHash: params.dockerComposeHash,
-      nilccVersion: params.nilccVersion,
-      vcpus: params.vcpus,
-    }),
+    body: JSON.stringify({ report: reportHex }),
   });
 
   if (!response.ok) {
@@ -51,8 +43,20 @@ export async function verifyAmdSev(params: {
     );
   }
 
-  const data = (await response.json()) as AttestationResponse;
-  return data;
+  const data = (await response.json()) as { chip_id?: string };
+
+  const result: AttestationResponse = {
+    success: true,
+    proof_of_cloud: true,
+    quote: {
+      header: {
+        tee_type: "TEE_AMD_SEV_SNP",
+      },
+    },
+    ...(data.chip_id ? { chip_id: data.chip_id } : {}),
+  };
+
+  return result;
 }
 
 /**
